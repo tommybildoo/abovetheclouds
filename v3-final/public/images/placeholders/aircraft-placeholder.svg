@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#0d1119"/>
+  <rect width="800" height="450" fill="url(#grid)"/>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff08" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <g transform="translate(400,225)" opacity="0.55">
+    <path d="M0 -70 L18 -10 L85 10 L85 25 L18 15 L10 65 L32 82 L32 96 L0 88 L-32 96 L-32 82 L-10 65 L-18 15 L-85 25 L-85 10 L-18 -10 Z"
+          fill="none" stroke="#ffb454" stroke-width="2.5"/>
+  </g>
+  <text x="400" y="360" text-anchor="middle" fill="#565f6f" font-family="monospace" font-size="14" letter-spacing="2">IMAGE NOT YET ADDED</text>
+</svg>

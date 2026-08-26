@@ -1,0 +1,20 @@
+.game{background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.game__grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;}
+.game h2{font-family:var(--font-display);font-weight:600;font-size:clamp(34px,5vw,58px);text-transform:uppercase;margin:14px 0 18px;}
+.game p{color:var(--text-dim);font-weight:300;max-width:400px;}
+.game__selects{margin-top:26px;display:flex;flex-direction:column;gap:16px;}
+.game__selects span{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text-dimmer);text-transform:uppercase;margin-bottom:8px;}
+.game__opts{display:flex;gap:8px;flex-wrap:wrap;}
+.game__opts button{padding:9px 16px;border:1px solid var(--line-strong);font-family:var(--font-mono);font-size:11px;color:var(--text-dim);}
+.game__opts button.active{border-color:var(--amber);color:var(--amber);}
+.cockpit{aspect-ratio:16/11;border:1px solid var(--line-strong);background:radial-gradient(ellipse at 50% 30%,rgba(75,216,196,.06),transparent 60%),#06080b;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.cockpit__hud{position:relative;z-index:2;text-align:center;}
+.cockpit__ring{width:140px;height:140px;border:1px solid var(--line-strong);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:var(--font-mono);color:var(--teal);font-size:16px;}
+.cockpit__label{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;color:var(--text-dimmer);text-transform:uppercase;margin-bottom:6px;}
+.cockpit__status{font-family:var(--font-mono);font-size:13px;color:var(--amber);letter-spacing:.06em;}
+.cockpit__corner{position:absolute;width:20px;height:20px;border:1px solid var(--line-strong);}
+.cockpit__corner.tl{top:14px;left:14px;border-right:none;border-bottom:none;}
+.cockpit__corner.tr{top:14px;right:14px;border-left:none;border-bottom:none;}
+.cockpit__corner.bl{bottom:14px;left:14px;border-right:none;border-top:none;}
+.cockpit__corner.br{bottom:14px;right:14px;border-left:none;border-top:none;}
+@media (max-width:900px){.game__grid{grid-template-columns:1fr;gap:36px;}}

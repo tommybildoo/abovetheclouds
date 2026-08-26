@@ -1,0 +1,33 @@
+{
+  "name": "abovetheclouds-v3",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "pages:dev": "wrangler pages dev dist --d1=DB",
+    "pages:deploy": "npm run build && wrangler pages deploy dist",
+    "db:migrate:local": "wrangler d1 execute abovetheclouds --local --file=database/migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute abovetheclouds --remote --file=database/migrations/0001_init.sql",
+    "worker:news:deploy": "wrangler deploy --config workers/cron/news-ingest.wrangler.toml",
+    "worker:challenge:deploy": "wrangler deploy --config workers/cron/daily-challenge.wrangler.toml",
+    "worker:flights:deploy": "wrangler deploy --config workers/cron/flight-cache-refresh.wrangler.toml",
+    "worker:cleanup:deploy": "wrangler deploy --config workers/cron/db-cleanup.wrangler.toml",
+    "workers:deploy:all": "npm run worker:news:deploy && npm run worker:challenge:deploy && npm run worker:flights:deploy && npm run worker:cleanup:deploy",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "maplibre-gl": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.0",
+    "wrangler": "^3.78.0"
+  }
+}

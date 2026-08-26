@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#0d1119"/>
+  <rect width="800" height="450" fill="url(#grid2)"/>
+  <defs>
+    <pattern id="grid2" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff08" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <g transform="translate(400,225)" opacity="0.5">
+    <circle r="70" fill="none" stroke="#4bd8c4" stroke-width="2"/>
+    <circle r="4" fill="#4bd8c4"/>
+    <line x1="-100" y1="0" x2="100" y2="0" stroke="#4bd8c4" stroke-width="1" stroke-dasharray="4 6"/>
+    <line x1="0" y1="-100" x2="0" y2="100" stroke="#4bd8c4" stroke-width="1" stroke-dasharray="4 6"/>
+  </g>
+  <text x="400" y="360" text-anchor="middle" fill="#565f6f" font-family="monospace" font-size="14" letter-spacing="2">IMAGE NOT YET ADDED</text>
+</svg>

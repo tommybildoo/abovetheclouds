@@ -1,0 +1,2 @@
+.spotter__card{max-width:640px;background:var(--bg-2);border:1px solid var(--line-strong);padding:34px;}
+.spotter__card p{color:var(--text-dim);font-size:14px;line-height:1.7;font-weight:300;}
