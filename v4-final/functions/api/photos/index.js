@@ -3,6 +3,8 @@ import { getSessionTokenFromRequest } from '../../../server/lib/auth.js';
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 const PHOTO_CACHE_CONTROL = 'public, max-age=300, s-maxage=1800, stale-while-revalidate=86400';
+const MIN_WIDTH = 1800;
+const MIN_HEIGHT = 1000;
 
 async function commonsAircraftPhotos() {
   const params = new URLSearchParams({
@@ -10,7 +12,8 @@ async function commonsAircraftPhotos() {
     generator: 'search',
     gsrsearch: 'aircraft airliner aviation filetype:bitmap',
     gsrnamespace: '6',
-    gsrlimit: '50',
+    gsrlimit: '60',
+    gsrwhat: 'text',
     prop: 'imageinfo',
     iiprop: 'url|size|mime|extmetadata',
     iiurlwidth: '3840',
@@ -29,6 +32,9 @@ async function commonsAircraftPhotos() {
     const info = page.imageinfo?.[0];
     const meta = info?.extmetadata || {};
     const title = page.title?.replace(/^File:/, '') || 'Aircraft';
+    const mime = String(info?.mime || '').toLowerCase();
+    const description = String(meta.ImageDescription?.value || '').replace(/<[^>]+>/g, '').trim();
+    const artist = String(meta.Artist?.value || '').replace(/<[^>]+>/g, '').trim();
     return {
       id: `commons-${page.pageid || index}`,
       image_url: info?.thumburl || info?.url,
@@ -37,24 +43,26 @@ async function commonsAircraftPhotos() {
       aircraft: title.replace(/\.[^.]+$/, ''),
       airport: null,
       location: 'Wikimedia Commons',
-      caption: meta.ImageDescription?.value?.replace(/<[^>]+>/g, '').slice(0, 240) || null,
-      author: meta.Artist?.value?.replace(/<[^>]+>/g, '').slice(0, 160) || null,
+      caption: description.slice(0, 240) || null,
+      author: artist.slice(0, 160) || null,
       license: meta.LicenseShortName?.value || null,
       source: 'Wikimedia Commons',
       source_url: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title || '')}`,
       width: info?.width || null,
       height: info?.height || null,
+      mime,
     };
   }).filter((p) =>
     p.image_url &&
-    ['image/jpeg', 'image/png', 'image/webp'].includes(p.mime || '') &&
-    (p.width || 0) >= 2500 &&
-    (p.height || 0) >= 1400
+    ['image/jpeg', 'image/png', 'image/webp'].includes(p.mime) &&
+    (p.width || 0) >= MIN_WIDTH &&
+    (p.height || 0) >= MIN_HEIGHT &&
+    !/diagram|logo|flag|map|chart|silhouette|illustration/i.test(`${p.aircraft} ${p.caption || ''}`)
   );
 }
 
 function photosResponse(photos, source) {
-  return new Response(JSON.stringify({ photos, source }), {
+  return new Response(JSON.stringify({ photos, source, count: photos.length }), {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': PHOTO_CACHE_CONTROL,
