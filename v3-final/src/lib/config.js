@@ -4,7 +4,7 @@
  * Pages secrets and are read by functions/ and workers/ (server-side).
  */
 export const CONFIG = {
-  instagramUrl: 'https://instagram.com/abovetheclouds', // TODO: replace with real handle
-  siteUrl: 'https://abovetheclouds.club',
+  instagramUrl: 'https://instagram.com/abovetheclouds.arg',
+  siteUrl: 'https://abovetheclouds.arg',
   flightRefreshIntervalSeconds: 20,
 };
