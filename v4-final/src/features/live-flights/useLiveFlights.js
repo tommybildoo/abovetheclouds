@@ -3,25 +3,15 @@ import { api } from '../../lib/api.js';
 import { CONFIG } from '../../lib/config.js';
 
 /**
- * Polls /api/flights/live on a fixed interval (default 20s — matches the
- * server-side cache lifetime). Exposes exactly what the server told us:
- * isLive/demoMode, updatedAt, category counts, and an explicit error
- * state instead of ever inventing data client-side.
- *
- * V4: accepts `country` (ISO code) in addition to the legacy
- * `argentina` boolean — both are forwarded to the API, which resolves
- * whichever one is present (see functions/api/flights/live.js).
+ * Polls the live-flight API without blanking an already-rendered map when a
+ * provider has a transient failure. This is especially useful with OAuth
+ * providers: the UI should keep the last known positions and clearly mark
+ * them as stale rather than flashing to zero aircraft.
  */
 export function useLiveFlights({ category, argentina, country } = {}) {
   const [state, setState] = useState({
-    flights: [],
-    provider: null,
-    isLive: false,
-    demoMode: true,
-    updatedAt: null,
-    counts: null,
-    error: null,
-    loading: true,
+    flights: [], provider: null, isLive: false, demoMode: true,
+    updatedAt: null, counts: null, error: null, loading: true,
   });
   const timerRef = useRef(null);
 
@@ -32,9 +22,10 @@ export function useLiveFlights({ category, argentina, country } = {}) {
       if (country) params.set('country', country);
       else if (argentina) params.set('argentina', '1');
       const data = await api(`/flights/live?${params.toString()}`);
+      const flights = Array.isArray(data.flights) ? data.flights : [];
       setState((s) => ({
         ...s,
-        flights: data.flights || [],
+        flights,
         provider: data.provider,
         isLive: data.isLive,
         demoMode: data.demoMode,
@@ -43,21 +34,30 @@ export function useLiveFlights({ category, argentina, country } = {}) {
         error: data.error || null,
         loading: false,
       }));
-    } catch (err) {
-      setState((s) => ({ ...s, error: 'LIVE_DATA_UNAVAILABLE', loading: false }));
+    } catch {
+      setState((s) => ({
+        ...s,
+        // Keep last known positions. A temporary provider/network error
+        // should never make a working map appear empty.
+        error: 'LIVE_DATA_UNAVAILABLE',
+        loading: false,
+      }));
     }
   }, [category, argentina, country]);
 
   useEffect(() => {
     fetchOnce();
-    timerRef.current = setInterval(fetchOnce, CONFIG.flightRefreshIntervalSeconds * 1000);
+    const interval = Math.max(10, Number(CONFIG.flightRefreshIntervalSeconds) || 20);
+    timerRef.current = setInterval(fetchOnce, interval * 1000);
     return () => clearInterval(timerRef.current);
   }, [fetchOnce]);
 
   const [secondsAgo, setSecondsAgo] = useState(0);
   useEffect(() => {
     const t = setInterval(() => {
-      if (state.updatedAt) setSecondsAgo(Math.floor(Date.now() / 1000) - state.updatedAt);
+      if (state.updatedAt) {
+        setSecondsAgo(Math.max(0, Math.floor(Date.now() / 1000) - state.updatedAt));
+      }
     }, 1000);
     return () => clearInterval(t);
   }, [state.updatedAt]);
