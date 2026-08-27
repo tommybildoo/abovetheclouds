@@ -11,10 +11,7 @@ binding = "DB"
 database_name = "abovetheclouds"
 database_id = "92f7d7ba-9e55-4afa-93f2-29f3396e4950"
 
-# Refresh once per minute. Authenticated OpenSky currently provides a
-# much larger credit budget than anonymous access, so this cadence is
-# appropriate for a live tracker while keeping visitor requests off the
-# external API.
+# Cron-only Worker: no workers.dev URL or public route is required.
 [triggers]
 crons = ["*/1 * * * *"]
 
