@@ -9,7 +9,7 @@ compatibility_date = "2024-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "abovetheclouds"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "92f7d7ba-9e55-4afa-93f2-29f3396e4950"
 
 # Refresh once per minute. Authenticated OpenSky currently provides a
 # much larger credit budget than anonymous access, so this cadence is
