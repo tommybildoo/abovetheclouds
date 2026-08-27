@@ -13,7 +13,7 @@ export default function AircraftExplorer() {
   return (
     <section>
       <div className="container">
-        <div className="section-head reveal">
+        <div className="section-head">
           <div>
             <div className="eyebrow">Discover Your Next Aircraft</div>
             <h2>Explore Aircraft</h2>
@@ -21,7 +21,7 @@ export default function AircraftExplorer() {
           <p>16 aircraft and growing — every spec, every story, every reason fans love them.</p>
         </div>
 
-        <div className="ae__grid reveal">
+        <div className="ae__grid">
           {aircraft === null && <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dimmer)' }}>Loading fleet…</p>}
           {aircraft && aircraft.length === 0 && (
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dimmer)' }}>
