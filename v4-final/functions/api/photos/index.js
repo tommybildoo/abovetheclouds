@@ -5,41 +5,56 @@ const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 
 async function commonsAircraftPhotos() {
   const params = new URLSearchParams({
-    action: 'query', generator: 'search', gsrsearch: 'aircraft aviation airplane',
-    gsrnamespace: '6', gsrlimit: '24', prop: 'imageinfo',
-    iiprop: 'url|size|extmetadata', iiurlwidth: '1600', format: 'json', origin: '*',
+    action: 'query',
+    generator: 'search',
+    gsrsearch: 'aircraft aviation airplane airliner',
+    gsrnamespace: '6',
+    gsrlimit: '32',
+    prop: 'imageinfo',
+    iiprop: 'url|size|extmetadata',
+    iiurlwidth: '2560',
+    format: 'json',
+    origin: '*',
   });
   const res = await fetch(`${COMMONS_API}?${params}`, {
-    headers: { 'User-Agent': 'AboveTheClouds/4.0 aviation community site' },
+    headers: {
+      'User-Agent': 'AboveTheClouds/4.0 (https://abovetheclouds.club) aviation community site',
+      Accept: 'application/json',
+    },
   });
   if (!res.ok) throw new Error(`Wikimedia Commons request failed: ${res.status}`);
   const json = await res.json();
   return Object.values(json.query?.pages || {}).map((page, index) => {
     const info = page.imageinfo?.[0];
     const meta = info?.extmetadata || {};
+    const title = page.title?.replace(/^File:/, '') || 'Aircraft';
     return {
       id: `commons-${page.pageid || index}`,
       image_url: info?.thumburl || info?.url,
       original_url: info?.url,
       username: 'Wikimedia Commons',
-      aircraft: page.title?.replace(/^File:/, '').replace(/\.[^.]+$/, '') || 'Aircraft',
-      airport: null, location: 'Wikimedia Commons',
+      aircraft: title.replace(/\.[^.]+$/, ''),
+      airport: null,
+      location: 'Wikimedia Commons',
       caption: meta.ImageDescription?.value?.replace(/<[^>]+>/g, '').slice(0, 240) || null,
       author: meta.Artist?.value?.replace(/<[^>]+>/g, '').slice(0, 160) || null,
       license: meta.LicenseShortName?.value || null,
       source: 'Wikimedia Commons',
       source_url: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title || '')}`,
-      width: info?.width || null, height: info?.height || null,
+      width: info?.width || null,
+      height: info?.height || null,
     };
-  }).filter((p) => p.image_url);
+  }).filter((p) => p.image_url && (p.width || 0) >= 1200 && (p.height || 0) >= 700);
 }
 
 export async function onRequestGet({ env }) {
   try {
     const rows = await d1All(env, `SELECT * FROM photos WHERE status = 'approved' ORDER BY created_at DESC LIMIT 40`);
-    if (rows.length >= 8) return jsonResponse({ photos: rows, source: 'community' });
     const commons = await commonsAircraftPhotos();
-    return jsonResponse({ photos: [...rows, ...commons].slice(0, 40), source: rows.length ? 'community+commons' : 'commons' });
+    return jsonResponse({
+      photos: [...rows, ...commons].slice(0, 40),
+      source: rows.length ? 'community+commons' : 'commons',
+    });
   } catch (err) {
     try {
       const commons = await commonsAircraftPhotos();

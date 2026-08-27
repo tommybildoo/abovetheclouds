@@ -1,12 +1,15 @@
 import { FlightDataProvider } from './FlightDataProvider.js';
 
 /**
- * OpenSky live state-vector provider.
+ * Live flight provider.
  *
- * Authenticated OAuth2 credentials are preferred. If they are not present,
- * OpenSky's public anonymous tier is used as a fallback. The anonymous tier
- * is rate-limited, so production should use FLIGHT_API_CLIENT_ID/SECRET and
- * the scheduled cache worker rather than calling this on every request.
+ * OpenSky is the preferred source when OAuth is reachable. When OpenSky's
+ * auth/API edge is unavailable, fall back to ADSB.lol for a regional live
+ * snapshot so the map does not go blank.
+ *
+ * NOTE: OpenSky's current terms require written permission for operational
+ * use in a live product. ADSB.lol is ODbL and asks production users to
+ * contact them first. Verify licensing before commercial launch.
  */
 export class OpenSkyFlightProvider extends FlightDataProvider {
   id = 'opensky';
@@ -18,6 +21,7 @@ export class OpenSkyFlightProvider extends FlightDataProvider {
     this.clientId = env.FLIGHT_API_CLIENT_ID;
     this.clientSecret = env.FLIGHT_API_CLIENT_SECRET;
     this.tokenUrl = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
+    this.adsbBaseUrl = env.FLIGHT_FALLBACK_API_BASE_URL || 'https://api.adsb.lol';
     this._tokenCache = null;
   }
 
@@ -44,7 +48,7 @@ export class OpenSkyFlightProvider extends FlightDataProvider {
     return this._tokenCache.accessToken;
   }
 
-  async _fetch(path) {
+  async _fetchOpenSky(path) {
     const token = await this._getAccessToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const res = await fetch(`${this.baseUrl}${path}`, { headers });
@@ -53,20 +57,17 @@ export class OpenSkyFlightProvider extends FlightDataProvider {
   }
 
   _category(code) {
-    // OpenSky emitter categories: 2 light, 3 small, 4 large, 5 high-vortex,
-    // 6 heavy, 7 high-performance, 8 rotorcraft, 9 glider, 14 UAV, etc.
     if ([4, 5, 6].includes(code)) return 'PASSENGER';
-    if ([2, 3, 7, 9, 12].includes(code)) return 'GENERAL_AVIATION';
-    if ([8].includes(code)) return 'GENERAL_AVIATION';
+    if ([2, 3, 7, 8, 9, 12].includes(code)) return 'GENERAL_AVIATION';
     if ([10, 11, 13, 14, 15, 16, 17, 18, 19, 20].includes(code)) return 'UNKNOWN';
     return 'UNKNOWN';
   }
 
-  _normalize(state) {
+  _normalizeOpenSky(state) {
     const [
       icao24, callsign, originCountry, , , longitude, latitude,
       baroAltitude, onGround, velocity, trueTrack, , , geoAltitude,
-      squawk, , , categoryCode,
+      , , , categoryCode,
     ] = state;
     const altitudeM = geoAltitude ?? baroAltitude;
     return {
@@ -89,30 +90,111 @@ export class OpenSkyFlightProvider extends FlightDataProvider {
     };
   }
 
-  async getLiveFlights(opts = {}) {
-    let path = '/states/all?extended=1';
+  _normalizeAdsb(ac) {
+    const alt = typeof ac.alt_geom === 'number' ? ac.alt_geom : ac.alt_baro;
+    const category = String(ac.category || '').toUpperCase();
+    const isHeavy = ['A5', 'A6', 'A7'].includes(category);
+    const isRotor = category.startsWith('A7') || category.startsWith('A8');
+    return {
+      icao24: ac.hex || null,
+      callsign: ac.flight ? ac.flight.trim() : null,
+      registration: ac.r || null,
+      aircraftType: ac.t || null,
+      airline: ac.ownOp || null,
+      originIcao: null,
+      destinationIcao: null,
+      latitude: ac.lat ?? null,
+      longitude: ac.lon ?? null,
+      altitudeFt: typeof alt === 'number' ? Math.round(alt) : null,
+      groundSpeedKt: typeof ac.gs === 'number' ? Math.round(ac.gs) : null,
+      headingDeg: typeof ac.track === 'number' ? Math.round(ac.track) : null,
+      category: isHeavy ? 'PASSENGER' : (isRotor ? 'GENERAL_AVIATION' : 'PASSENGER'),
+      status: typeof ac.alt_baro === 'string' && ac.alt_baro === 'ground' ? 'LANDED' : 'IN_FLIGHT',
+      provider: 'adsb.lol',
+      updatedAt: Math.floor(Date.now() / 1000),
+    };
+  }
+
+  async _fetchAdsbPoint(lat, lon, radiusNm = 250) {
+    const url = `${this.adsbBaseUrl}/v2/point/${lat}/${lon}/${Math.min(250, Math.max(1, radiusNm))}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`ADSB.lol request failed (${res.status})`);
+    const json = await res.json();
+    return (json.ac || [])
+      .filter((a) => a.lat != null && a.lon != null && a.hex)
+      .map((a) => this._normalizeAdsb(a));
+  }
+
+  async _fallbackFlights(opts = {}) {
+    // A point query is intentionally used because ADSB.lol exposes regional
+    // live endpoints (up to 250 NM), not a single worldwide snapshot.
     if (opts.bbox) {
       const { minLat, maxLat, minLon, maxLon } = opts.bbox;
-      path += `&lamin=${minLat}&lamax=${maxLat}&lomin=${minLon}&lomax=${maxLon}`;
+      const lat = (Number(minLat) + Number(maxLat)) / 2;
+      const lon = (Number(minLon) + Number(maxLon)) / 2;
+      const latNm = Math.abs(Number(maxLat) - Number(minLat)) * 60;
+      const lonNm = Math.abs(Number(maxLon) - Number(minLon)) * 60 * Math.cos((lat * Math.PI) / 180);
+      const radius = Math.min(250, Math.max(25, Math.ceil(Math.hypot(latNm, lonNm) / 2)));
+      return this._fetchAdsbPoint(lat, lon, radius);
     }
-    const json = await this._fetch(path);
-    return (json.states || [])
-      .filter((s) => s[6] != null && s[5] != null)
-      .map((s) => this._normalize(s));
+
+    // Default coverage for the current AboveTheClouds audience: Argentina
+    // and the surrounding South Atlantic airspace.
+    const centers = [
+      [-34.60, -58.42], // Buenos Aires
+      [-31.32, -64.21], // Córdoba
+      [-32.89, -68.84], // Mendoza
+    ];
+    const batches = await Promise.all(centers.map(([lat, lon]) => this._fetchAdsbPoint(lat, lon, 250)));
+    const seen = new Set();
+    return batches.flat().filter((flight) => {
+      if (seen.has(flight.icao24)) return false;
+      seen.add(flight.icao24);
+      return true;
+    });
+  }
+
+  async getLiveFlights(opts = {}) {
+    try {
+      let path = '/states/all?extended=1';
+      if (opts.bbox) {
+        const { minLat, maxLat, minLon, maxLon } = opts.bbox;
+        path += `&lamin=${minLat}&lamax=${maxLat}&lomin=${minLon}&lomax=${maxLon}`;
+      }
+      const json = await this._fetchOpenSky(path);
+      return (json.states || [])
+        .filter((s) => s[6] != null && s[5] != null)
+        .map((s) => this._normalizeOpenSky(s));
+    } catch (openSkyError) {
+      const fallback = await this._fallbackFlights(opts);
+      return fallback;
+    }
   }
 
   async getFlightById(icao24) {
-    const json = await this._fetch(`/states/all?icao24=${encodeURIComponent(icao24.toLowerCase())}&extended=1`);
-    const state = (json.states || [])[0];
-    return state ? this._normalize(state) : null;
+    try {
+      const json = await this._fetchOpenSky(`/states/all?icao24=${encodeURIComponent(icao24.toLowerCase())}&extended=1`);
+      const state = (json.states || [])[0];
+      return state ? this._normalizeOpenSky(state) : null;
+    } catch {
+      const flights = await this._fetchAdsbPoint(-34.6, -58.42, 250);
+      return flights.find((f) => f.icao24?.toLowerCase() === icao24.toLowerCase()) || null;
+    }
   }
 
   async getFlightsNearLocation({ lat, lon, radiusKm = 300 }) {
-    const degLat = radiusKm / 111;
-    const degLon = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
-    return this.getLiveFlights({
-      bbox: { minLat: lat - degLat, maxLat: lat + degLat, minLon: lon - degLon, maxLon: lon + degLon },
-    });
+    try {
+      return await this.getLiveFlights({
+        bbox: {
+          minLat: lat - radiusKm / 111,
+          maxLat: lat + radiusKm / 111,
+          minLon: lon - radiusKm / (111 * Math.cos((lat * Math.PI) / 180)),
+          maxLon: lon + radiusKm / (111 * Math.cos((lat * Math.PI) / 180)),
+        },
+      });
+    } catch {
+      return this._fetchAdsbPoint(lat, lon, Math.min(250, radiusKm / 1.852));
+    }
   }
 
   async getAircraftDetails() {
