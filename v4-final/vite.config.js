@@ -3,6 +3,17 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          maplibre: ['maplibre-gl'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       // In local dev, `wrangler pages dev` serves /api on its own port —
