@@ -3,11 +3,6 @@ import { Link } from 'react-router-dom';
 import { api } from '../../lib/api.js';
 import SafeImage from '../../components/SafeImage.jsx';
 
-const remoteImage = (a) => {
-  const q = encodeURIComponent(`${a.manufacturer || ''} ${a.model || ''} aircraft`);
-  return `https://commons.wikimedia.org/wiki/Special:FilePath/${q}.jpg`;
-};
-
 export default function AircraftExplorer() {
   const [aircraft, setAircraft] = useState(null);
 
@@ -36,7 +31,7 @@ export default function AircraftExplorer() {
           {aircraft && aircraft.map((a) => (
             <Link key={a.slug} to={`/aircraft/${a.slug}`} className="ae__card">
               <SafeImage
-                src={a.image_url || a.image || remoteImage(a)}
+                src={a.hero_image || a.image_url || a.image}
                 alt={`${a.manufacturer} ${a.model}`}
                 kind="aircraft"
                 className="ae__image"
