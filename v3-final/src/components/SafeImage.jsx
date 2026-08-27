@@ -8,6 +8,10 @@ import React, { useState } from 'react';
  * so missing assets never look broken — see public/images/README.md
  * for where to drop real files.
  *
+ * Database seed paths are stored as `images/...`; normalize those to
+ * root-relative public assets so they also work on nested routes such
+ * as /aircraft/boeing-737.
+ *
  * `kind` selects which placeholder to show: 'aircraft' | 'airport' | 'photo'.
  */
 const PLACEHOLDERS = {
@@ -16,9 +20,15 @@ const PLACEHOLDERS = {
   photo: '/images/placeholders/photo-placeholder.svg',
 };
 
+function normalizeSrc(src, fallback) {
+  if (!src) return fallback;
+  if (/^(https?:)?\/\//i.test(src) || src.startsWith('/')) return src;
+  return `/${src}`;
+}
+
 export default function SafeImage({ src, alt, kind = 'aircraft', className, style, loading = 'lazy' }) {
   const fallback = PLACEHOLDERS[kind] || PLACEHOLDERS.aircraft;
-  const [current, setCurrent] = useState(src || fallback);
+  const [current, setCurrent] = useState(normalizeSrc(src, fallback));
 
   return (
     <img
