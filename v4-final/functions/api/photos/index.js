@@ -2,17 +2,18 @@ import { d1All, d1Run, nowSeconds, jsonResponse, errorResponse } from '../../../
 import { getSessionTokenFromRequest } from '../../../server/lib/auth.js';
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
+const PHOTO_CACHE_CONTROL = 'public, max-age=300, s-maxage=1800, stale-while-revalidate=86400';
 
 async function commonsAircraftPhotos() {
   const params = new URLSearchParams({
     action: 'query',
     generator: 'search',
-    gsrsearch: 'aircraft aviation airplane airliner',
+    gsrsearch: 'aircraft airliner aviation filetype:bitmap',
     gsrnamespace: '6',
-    gsrlimit: '32',
+    gsrlimit: '50',
     prop: 'imageinfo',
-    iiprop: 'url|size|extmetadata',
-    iiurlwidth: '2560',
+    iiprop: 'url|size|mime|extmetadata',
+    iiurlwidth: '3840',
     format: 'json',
     origin: '*',
   });
@@ -44,21 +45,32 @@ async function commonsAircraftPhotos() {
       width: info?.width || null,
       height: info?.height || null,
     };
-  }).filter((p) => p.image_url && (p.width || 0) >= 1200 && (p.height || 0) >= 700);
+  }).filter((p) =>
+    p.image_url &&
+    ['image/jpeg', 'image/png', 'image/webp'].includes(p.mime || '') &&
+    (p.width || 0) >= 2500 &&
+    (p.height || 0) >= 1400
+  );
+}
+
+function photosResponse(photos, source) {
+  return new Response(JSON.stringify({ photos, source }), {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': PHOTO_CACHE_CONTROL,
+    },
+  });
 }
 
 export async function onRequestGet({ env }) {
   try {
     const rows = await d1All(env, `SELECT * FROM photos WHERE status = 'approved' ORDER BY created_at DESC LIMIT 40`);
     const commons = await commonsAircraftPhotos();
-    return jsonResponse({
-      photos: [...rows, ...commons].slice(0, 40),
-      source: rows.length ? 'community+commons' : 'commons',
-    });
+    return photosResponse([...rows, ...commons].slice(0, 40), rows.length ? 'community+commons' : 'commons');
   } catch (err) {
     try {
       const commons = await commonsAircraftPhotos();
-      return jsonResponse({ photos: commons.slice(0, 40), source: 'commons' });
+      return photosResponse(commons.slice(0, 40), 'commons');
     } catch {
       return errorResponse(err.message, 500);
     }
