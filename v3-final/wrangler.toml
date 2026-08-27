@@ -8,7 +8,7 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "abovetheclouds"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "92f7d7ba-9e55-4afa-93f2-29f3396e4950"
 preview_database_id = "DB"
 
 # Live flight data is selected here. OAuth credentials are secrets and
