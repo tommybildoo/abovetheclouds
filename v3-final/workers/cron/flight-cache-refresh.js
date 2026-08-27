@@ -32,10 +32,13 @@ export default {
 async function refresh(env) {
   const provider = getFlightProvider(env);
   if (!provider.isLive) {
-    return { skipped: true, reason: 'Demo provider does not need server-side caching (synthetic data).' };
+    const result = { skipped: true, reason: 'Demo provider does not need server-side caching (synthetic data).' };
+    console.log('[flight-cache-refresh]', JSON.stringify(result));
+    return result;
   }
   try {
     const raw = await provider.getLiveFlights();
+    console.log('[flight-cache-refresh] OpenSky returned', raw.length, 'flights');
     const flights = await enrichWithMetadata(env, raw);
     for (const f of flights) {
       await d1Run(
@@ -52,8 +55,12 @@ async function refresh(env) {
         f.latitude, f.longitude, f.altitudeFt, f.groundSpeedKt, f.headingDeg, f.category, f.status, f.provider, f.updatedAt
       );
     }
-    return { refreshed: flights.length, provider: provider.id };
+    const result = { refreshed: flights.length, provider: provider.id };
+    console.log('[flight-cache-refresh] SUCCESS', JSON.stringify(result));
+    return result;
   } catch (err) {
-    return { error: err.message, provider: provider.id };
+    const result = { error: err.message, provider: provider.id };
+    console.error('[flight-cache-refresh] ERROR', JSON.stringify(result), err.stack);
+    return result;
   }
 }
