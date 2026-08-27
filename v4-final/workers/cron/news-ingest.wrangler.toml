@@ -1,0 +1,23 @@
+# ============================================================
+# Standalone Worker config — News Ingestion
+# Deploy: wrangler deploy --config workers/cron/news-ingest.wrangler.toml
+# ============================================================
+name = "atc-news-ingest"
+main = "./news-ingest.js"
+compatibility_date = "2024-09-01"
+
+# Must point at the SAME D1 database as the Pages project's wrangler.toml.
+# Replace database_id with the real id from `wrangler d1 create abovetheclouds`
+# (same value you put in the root wrangler.toml).
+[[d1_databases]]
+binding = "DB"
+database_name = "abovetheclouds"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Runs every 20 minutes. Adjust based on how often your sources publish.
+[triggers]
+crons = ["*/20 * * * *"]
+
+[vars]
+# Non-secret defaults only. Secrets (if this worker ever needs any) are
+# set with: wrangler secret put NAME --config workers/cron/news-ingest.wrangler.toml

@@ -1,0 +1,18 @@
+# ============================================================
+# Standalone Worker config — Database Cleanup
+# Deploy: wrangler deploy --config workers/cron/db-cleanup.wrangler.toml
+# ============================================================
+name = "atc-db-cleanup"
+main = "./db-cleanup.js"
+compatibility_date = "2024-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "abovetheclouds"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Runs once daily at 03:30 UTC, a low-traffic window.
+[triggers]
+crons = ["30 3 * * *"]
+
+[vars]

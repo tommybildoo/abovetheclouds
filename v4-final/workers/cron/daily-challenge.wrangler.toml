@@ -1,0 +1,22 @@
+# ============================================================
+# Standalone Worker config — Daily Challenge pre-generation
+# Deploy: wrangler deploy --config workers/cron/daily-challenge.wrangler.toml
+# ============================================================
+name = "atc-daily-challenge"
+main = "./daily-challenge.js"
+compatibility_date = "2024-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "abovetheclouds"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Runs once daily shortly after UTC midnight. This is a convenience
+# pre-warm only — /api/challenge/today also creates the challenge lazily
+# on first request of the day if this worker hasn't run yet (idempotent
+# via the UNIQUE constraint on challenge_date), so this cron is not a
+# hard dependency for the feature to work.
+[triggers]
+crons = ["5 0 * * *"]
+
+[vars]

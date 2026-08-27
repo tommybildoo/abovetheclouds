@@ -1,0 +1,13 @@
+.lb__tabs{display:flex;gap:8px;}
+.lb__tabs button{padding:8px 14px;border:1px solid var(--line-strong);font-family:var(--font-mono);font-size:10px;color:var(--text-dim);}
+.lb__tabs button.active{border-color:var(--amber);color:var(--amber);}
+.lb__table{border:1px solid var(--line);}
+.lb__row{display:grid;grid-template-columns:60px 1fr 120px;padding:14px 22px;border-bottom:1px solid var(--line);align-items:center;}
+.lb__row:last-child{border-bottom:none;}
+.lb__rank{font-family:var(--font-mono);color:var(--amber);}
+.lb__name{font-family:var(--font-display);font-size:15px;}
+.lb__xp{font-family:var(--font-mono);font-size:12px;color:var(--teal);text-align:right;}
+.lb__scopes{display:flex;gap:8px;margin-bottom:20px;}
+.lb__scopes button{padding:8px 16px;border:1px solid var(--line-strong);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--text-dim);}
+.lb__scopes button.active{border-color:var(--teal);color:var(--teal);}
+.lb__scopes button:disabled{opacity:.35;cursor:not-allowed;}

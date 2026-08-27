@@ -1,0 +1,28 @@
+# ============================================================
+# Standalone Worker config — Live Flight Cache Refresh
+# Deploy: wrangler deploy --config workers/cron/flight-cache-refresh.wrangler.toml
+# ============================================================
+name = "atc-flight-refresh"
+main = "./flight-cache-refresh.js"
+compatibility_date = "2024-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "abovetheclouds"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Refresh interval — see README "Flight refresh & rate limits" for how
+# this interacts with your provider's rate limit. 1 minute is a
+# reasonable default for OpenSky's AUTHENTICATED tier (not anonymous).
+# This worker is a no-op (skips immediately) when FLIGHT_DATA_PROVIDER
+# is "demo", so it is safe to deploy even before you have credentials.
+[triggers]
+crons = ["*/1 * * * *"]
+
+[vars]
+FLIGHT_DATA_PROVIDER = "demo"
+FLIGHT_API_BASE_URL = "https://opensky-network.org/api"
+
+# Secrets (set these once you have real OpenSky credentials):
+#   wrangler secret put FLIGHT_API_CLIENT_ID --config workers/cron/flight-cache-refresh.wrangler.toml
+#   wrangler secret put FLIGHT_API_CLIENT_SECRET --config workers/cron/flight-cache-refresh.wrangler.toml

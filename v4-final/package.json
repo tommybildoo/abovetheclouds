@@ -1,0 +1,37 @@
+{
+  "name": "abovetheclouds-v4",
+  "private": true,
+  "version": "4.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "pages:dev": "wrangler pages dev dist --persist-to=.wrangler/state",
+    "pages:deploy": "npm run build && wrangler pages deploy dist",
+    "db:migrate:local": "wrangler d1 execute abovetheclouds --local --persist-to=.wrangler/state --file=database/migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute abovetheclouds --remote --file=database/migrations/0001_init.sql",
+    "db:seed:local": "wrangler d1 execute abovetheclouds --local --persist-to=.wrangler/state --file=database/migrations/0002_seed.sql",
+    "db:seed:remote": "wrangler d1 execute abovetheclouds --remote --file=database/migrations/0002_seed.sql",
+    "db:migrate:v4:local": "wrangler d1 execute abovetheclouds --local --persist-to=.wrangler/state --file=database/migrations/0003_v4_country.sql",
+    "db:migrate:v4:remote": "wrangler d1 execute abovetheclouds --remote --file=database/migrations/0003_v4_country.sql",
+    "worker:news:deploy": "wrangler deploy --config workers/cron/news-ingest.wrangler.toml",
+    "worker:challenge:deploy": "wrangler deploy --config workers/cron/daily-challenge.wrangler.toml",
+    "worker:flights:deploy": "wrangler deploy --config workers/cron/flight-cache-refresh.wrangler.toml",
+    "worker:cleanup:deploy": "wrangler deploy --config workers/cron/db-cleanup.wrangler.toml",
+    "workers:deploy:all": "npm run worker:news:deploy && npm run worker:challenge:deploy && npm run worker:flights:deploy && npm run worker:cleanup:deploy",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "maplibre-gl": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.0",
+    "wrangler": "^3.78.0"
+  }
+}
