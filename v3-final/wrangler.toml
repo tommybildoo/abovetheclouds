@@ -1,12 +1,6 @@
 # ============================================================
 # AboveTheClouds V3 — Cloudflare Pages configuration
-# This project deploys as a Cloudflare Pages site:
-#   - Frontend (src/) is built by Vite into `dist/`
-#   - functions/ becomes the Pages Functions API (runs on Workers runtime)
-#   - workers/cron/*.js are deployed as SEPARATE standalone Workers
-#     (Pages Functions cannot run on a cron trigger themselves — see README)
 # ============================================================
-
 name = "abovetheclouds"
 compatibility_date = "2024-09-01"
 pages_build_output_dir = "dist"
@@ -17,8 +11,8 @@ database_name = "abovetheclouds"
 database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 preview_database_id = "DB"
 
-# Non-secret vars can go here. Secrets (API keys, admin token) must be set with:
-#   wrangler pages secret put FLIGHT_API_CLIENT_ID
-# NEVER commit real secrets to this file.
+# Live flight data is selected here. OAuth credentials are secrets and
+# must be configured in Cloudflare, never committed to this file.
 [vars]
-FLIGHT_DATA_PROVIDER = "demo"
+FLIGHT_DATA_PROVIDER = "opensky"
+FLIGHT_API_BASE_URL = "https://opensky-network.org/api"
