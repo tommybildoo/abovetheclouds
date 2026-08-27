@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 /**
  * SafeImage renders a local/public image when available and falls back to a
- * branded placeholder when it is not. Database paths such as
- * `images/aircraft/737.jpg` are normalized to `/images/aircraft/737.jpg`.
+ * branded placeholder when it is not.
+ *
+ * `fallbackSrc` can provide a remote image that should be tried before the
+ * branded placeholder. This lets seeded records keep lightweight local paths
+ * while the UI still has a real photo when those local assets are absent.
  */
 const PLACEHOLDERS = {
   aircraft: '/images/placeholders/aircraft-placeholder.svg',
@@ -17,14 +20,23 @@ function normalizeSrc(src, fallback) {
   return `/${src}`;
 }
 
-export default function SafeImage({ src, alt, kind = 'aircraft', className, style, loading = 'lazy' }) {
-  const fallback = PLACEHOLDERS[kind] || PLACEHOLDERS.aircraft;
-  const normalized = normalizeSrc(src, fallback);
-  const [current, setCurrent] = useState(normalized);
+export default function SafeImage({
+  src,
+  fallbackSrc = null,
+  alt,
+  kind = 'aircraft',
+  className,
+  style,
+  loading = 'lazy',
+}) {
+  const placeholder = PLACEHOLDERS[kind] || PLACEHOLDERS.aircraft;
+  const primary = normalizeSrc(src, fallbackSrc || placeholder);
+  const secondary = fallbackSrc ? normalizeSrc(fallbackSrc, placeholder) : null;
+  const [current, setCurrent] = useState(primary);
 
   useEffect(() => {
-    setCurrent(normalized);
-  }, [normalized]);
+    setCurrent(primary);
+  }, [primary]);
 
   return (
     <img
@@ -34,7 +46,11 @@ export default function SafeImage({ src, alt, kind = 'aircraft', className, styl
       className={className}
       style={style}
       onError={() => {
-        if (current !== fallback) setCurrent(fallback);
+        if (secondary && current !== secondary && secondary !== placeholder) {
+          setCurrent(secondary);
+          return;
+        }
+        if (current !== placeholder) setCurrent(placeholder);
       }}
     />
   );
