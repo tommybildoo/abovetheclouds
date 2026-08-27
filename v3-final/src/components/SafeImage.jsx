@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-/**
- * SafeImage renders a local/public image when available and falls back to a
- * branded placeholder when it is not.
- *
- * `fallbackSrc` can provide a remote image that should be tried before the
- * branded placeholder. This lets seeded records keep lightweight local paths
- * while the UI still has a real photo when those local assets are absent.
- */
 const PLACEHOLDERS = {
   aircraft: '/images/placeholders/aircraft-placeholder.svg',
   airport: '/images/placeholders/airport-placeholder.svg',
@@ -18,6 +10,19 @@ function normalizeSrc(src, fallback) {
   if (!src) return fallback;
   if (/^(https?:)?\/\//i.test(src) || src.startsWith('/')) return src;
   return `/${src}`;
+}
+
+async function wikipediaThumbnail(alt) {
+  if (!alt) return null;
+  try {
+    const title = encodeURIComponent(alt.trim().replace(/\s+/g, ' '));
+    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.thumbnail?.source || data?.originalimage?.source || null;
+  } catch {
+    return null;
+  }
 }
 
 export default function SafeImage({
@@ -33,10 +38,28 @@ export default function SafeImage({
   const primary = normalizeSrc(src, fallbackSrc || placeholder);
   const secondary = fallbackSrc ? normalizeSrc(fallbackSrc, placeholder) : null;
   const [current, setCurrent] = useState(primary);
+  const [wikiTried, setWikiTried] = useState(false);
 
   useEffect(() => {
     setCurrent(primary);
+    setWikiTried(false);
   }, [primary]);
+
+  const handleError = async () => {
+    if (secondary && current !== secondary && secondary !== placeholder) {
+      setCurrent(secondary);
+      return;
+    }
+    if (!wikiTried && alt) {
+      setWikiTried(true);
+      const remote = await wikipediaThumbnail(alt);
+      if (remote) {
+        setCurrent(remote);
+        return;
+      }
+    }
+    if (current !== placeholder) setCurrent(placeholder);
+  };
 
   return (
     <img
@@ -45,13 +68,7 @@ export default function SafeImage({
       loading={loading}
       className={className}
       style={style}
-      onError={() => {
-        if (secondary && current !== secondary && secondary !== placeholder) {
-          setCurrent(secondary);
-          return;
-        }
-        if (current !== placeholder) setCurrent(placeholder);
-      }}
+      onError={handleError}
     />
   );
 }
