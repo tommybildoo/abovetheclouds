@@ -1,12 +1,6 @@
 # ============================================================
-# AboveTheClouds V3 — Cloudflare Pages configuration
-# This project deploys as a Cloudflare Pages site:
-#   - Frontend (src/) is built by Vite into `dist/`
-#   - functions/ becomes the Pages Functions API (runs on Workers runtime)
-#   - workers/cron/*.js are deployed as SEPARATE standalone Workers
-#     (Pages Functions cannot run on a cron trigger themselves — see README)
+# AboveTheClouds V4 — Cloudflare Pages configuration
 # ============================================================
-
 name = "abovetheclouds"
 compatibility_date = "2024-09-01"
 pages_build_output_dir = "dist"
@@ -14,22 +8,12 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "abovetheclouds"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
-# Do NOT add a `preview_database_id` here unless it is a real D1 database
-# id (a UUID from `wrangler d1 create`). It is not required for local
-# development: `wrangler pages dev` runs D1 locally via Miniflare
-# regardless of the id above. Local persistence between `wrangler d1
-# execute --local` (migrations/seed) and `wrangler pages dev` is instead
-# kept in sync by passing the SAME `--persist-to=.wrangler/state` flag
-# to both commands — see the `db:migrate:local`, `db:seed:local`, and
-# `pages:dev` scripts in package.json, and README "Local development".
-# A mismatched or invalid preview_database_id can cause `wrangler pages
-# dev` to read from a different (empty) local D1 store than the one the
-# migration/seed commands wrote to, surfacing as
-# "D1_ERROR: no such table: <table>" even though migrations succeeded.
+database_id = "92f7d7ba-9e55-4afa-93f2-29f3396e4950"
 
-# Non-secret vars can go here. Secrets (API keys, admin token) must be set with:
-#   wrangler pages secret put FLIGHT_API_CLIENT_ID
-# NEVER commit real secrets to this file.
 [vars]
-FLIGHT_DATA_PROVIDER = "demo"
+FLIGHT_DATA_PROVIDER = "opensky"
+FLIGHT_API_BASE_URL = "https://opensky-network.org/api"
+
+# Secrets must be configured in Cloudflare, never committed here:
+#   wrangler pages secret put FLIGHT_API_CLIENT_ID
+#   wrangler pages secret put FLIGHT_API_CLIENT_SECRET
